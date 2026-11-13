@@ -54,16 +54,37 @@ const SAMPLE={t:"Garlic Butter Steak Bites",s:`Ingredients
 5. Plate the steak and beans, spoon over the garlic butter, and enjoy!`};
 const $=i=>document.getElementById(i);
 const PRE=["Beef to cook","Chicken to cook","Veggies to roast","Pasta to boil","Rice to simmer","Meat to rest"];
-let title="",steps=[],ing=[],i=0,view="r",timers=[],nid=1,ti=0,lb=0,mins=5,alarmQ=[];
+const LIB=[{t:"Turkey Chili · 4 servings",s:`Ingredients
+20 oz ground turkey
+16 oz butternut squash
+4 scallions
+2 cans black beans
+2 tomato paste
+1 Tex-Mex paste (all)
+2 tbsp Southwest spice blend
+2 limes
+8 tbsp yogurt
+1/2 cup white cheddar
+Pantry: oil, salt, pepper
+
+1. Wash produce. Chop squash into bite-size pieces. Slice scallions, keeping whites and greens apart. Quarter the lime.
+2. Heat a drizzle of oil in a large pot over medium-high. Add turkey and Southwest spice. Season with salt and pepper.
+3. Cook turkey, breaking it up, until browned and cooked through, 4-6 minutes.
+4. Add squash and scallion whites. Stir now and then until scallions soften, 2-4 minutes.
+5. Stir in all the tomato paste and all the Tex-Mex paste. Cook until slightly darker, 1-2 minutes.
+6. Add the beans with their liquid, 2 cups water, salt and pepper. Bring to a simmer.
+7. Simmer, stirring now and then, until chili thickens and squash is tender, 12-15 minutes. Turn off heat.
+8. Too thick? Add a splash of water. Season with a squeeze of lime, salt and pepper.
+9. Serve in bowls topped with yogurt, scallion greens and the cheddar. Lime wedges on the side.`},SAMPLE];let pick=0;let title="",steps=[],ing=[],i=0,view="r",timers=[],nid=1,ti=0,lb=0,mins=5,alarmQ=[];
 const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 function parse(t){const L=t.split("\n").map(s=>s.trim()),n=L.findIndex(l=>/^\d+[.)]\s/.test(l));
  ing=(n>0?L.slice(0,n):[]).filter(l=>l&&!/^ingredients$/i.test(l));
  let s=L.filter(l=>/^\d+[.)]\s/.test(l)).map(l=>l.replace(/^\d+[.)]\s*/,""));
  return s.length?s:L.filter(Boolean)}
-function dur(s){const m=(s||"").match(/(\d+(?:\.\d+)?)(?:\s*(?:-|to)\s*\d+)?\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)/i);
- if(!m)return 0;const n=+m[1],u=m[2][0].toLowerCase();return u==="h"?n*3600:u==="m"?n*60:n}
-function lab(s){const f=(s.match(/\b(beef|steak|chicken|pork|salmon|shrimp|fish|rice|pasta|potatoes?|beans|veggies|vegetables|sauce|onions?|tofu)\b/i)||[])[1],
+function dur(s){const m=(s||"").match(/(\d+(?:\.\d+)?)(?:\s*(?:-|to)\s*(\d+))?\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)/i);
+ if(!m)return 0;const n=+(m[2]||m[1]),u=m[3][0].toLowerCase();return u==="h"?n*3600:u==="m"?n*60:n}
+function lab(s){const f=(s.match(/\b(beef|turkey|squash|chili|steak|chicken|pork|salmon|shrimp|fish|rice|pasta|potatoes?|beans|veggies|vegetables|sauce|onions?|tofu)\b/i)||[])[1],
  v=(s.match(/\b(cook|bake|roast|simmer|boil|sear|rest|stir|toast|steam)\b/i)||[])[1];
  const x=f&&v?`${f} to ${v}`:s.split(" ").slice(0,3).join(" ");return x[0].toUpperCase()+x.slice(1).toLowerCase()}
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
@@ -71,10 +92,11 @@ function load(t,s){title=t;steps=parse(s);i=0;view="r";set("cl-t",t);set("cl-s",
 function addT(l,sec){timers.push({id:nid++,l,end:Date.now()+sec*1000,d:0});draw()}
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();[0,.3,.6].forEach(o=>{const g=c.createOscillator();g.connect(c.destination);g.frequency.value=900;g.start(c.currentTime+o);g.stop(c.currentTime+o+.18)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
 function draw(){
- const n=steps.length;$("a").textContent=view==="t"?"Timers":view==="i"?"Ingredients":title;
+ const n=steps.length;$("a").textContent=view==="p"?"Recipes":view==="t"?"Timers":view==="i"?"Ingredients":title;
  $("b").textContent=view==="r"&&n?`${i+1}/${n}`:"";$("p").style.width=(n?(i+1)/n*100:0)+"%";
  let h="",ft="";
- if(view==="r"){h=`<div>${esc(steps[i]||"Open ✎ to load a recipe")}</div>`;const d=dur(steps[i]);
+ if(view==="p"){h=`<div class="list">${LIB.map((r,k)=>`<div class="${k===pick?"sel":""}">${esc(r.t)}</div>`).join("")}</div>`;ft="▲ ▼ choose  ·  ● open"}
+ else if(view==="r"){h=`<div>${esc(steps[i]||"Open ✎ to load a recipe")}</div>`;const d=dur(steps[i]);
   ft=`◀ ▶ step  ·  ${d?`● start ${fmt(d)} timer`:"● no time here"}  ·  ▲ ingredients  ·  ▼ timers`}
  else if(view==="i"){h=`<div class="list">${ing.map(x=>"• "+esc(x)).join("<br>")||"No ingredients found"}</div>`;ft="▼ or ● back to step"}
  else{const rows=[`<div class="${ti===0?"sel":""}">＋ ${esc(PRE[lb])} · ${mins} min</div>`];
@@ -86,9 +108,10 @@ function draw(){
  $("f").textContent=ft}
 function key(k){
  if($("alarm").style.display==="flex"){dismiss();return}
+ if(view==="p"){if(k==="d")pick=Math.min(LIB.length-1,pick+1);else if(k==="u")pick=Math.max(0,pick-1);else if(k==="ok")load(LIB[pick].t,LIB[pick].s);draw();return}
  if(k==="esc"){view="r";draw();return}
  if(view==="r"){
-  if(k==="r"&&i<steps.length-1)i++;else if(k==="l"&&i>0)i--;
+  if(k==="r"&&i<steps.length-1)i++;else if(k==="l"){if(i>0)i--;else view="p"}
   else if(k==="u")view="i";else if(k==="d"){view="t";ti=0}
   else if(k==="ok"){const s=dur(steps[i]);if(s)addT(lab(steps[i]),s)}}
  else if(view==="i"){if(k==="d"||k==="ok"||k==="esc")view="r"}
@@ -108,5 +131,5 @@ $("gear").onclick=()=>{$("ti").value=title;$("src").value=get("cl-s")||SAMPLE.s;
 $("x").onclick=()=>$("setup").style.display="none";
 $("ok").onclick=()=>{load($("ti").value||"Recipe",$("src").value);$("setup").style.display="none"};
 try{navigator.wakeLock&&navigator.wakeLock.request("screen").catch(()=>{})}catch(e){}
-load(get("cl-t")||SAMPLE.t,get("cl-s")||SAMPLE.s);
+title="Recipes";view="p";draw();
 </script></body></html>
